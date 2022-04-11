@@ -3,9 +3,9 @@ import torch.nn as nn
 import collections
 
 
-class JDDNetwork(nn.Module):
+class BayerJDDNetwork(nn.Module):
     def __init__(self, width=64, depth=16, pre_trained=False, padding=True):
-        super(JDDNetwork, self).__init__()
+        super(BayerJDDNetwork, self).__init__()
 
         self.width = width
         self.depth = depth
