@@ -1,7 +1,6 @@
 import numpy as np
 import torch as th
 
-
 class PSNR(th.nn.Module):
     def __init__(self):
         super(PSNR, self).__init__()
