@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import collections
-
+import numpy as np
 
 class BayerJDDNetwork(nn.Module):
     def __init__(self, width=64, depth=16, pre_trained=False, padding=True):
@@ -41,8 +41,8 @@ class BayerJDDNetwork(nn.Module):
 
     def forward(self, inputs, noise_level):
         F0 = self.down_sample(inputs)
-        p_size = inputs.size()[2:]
-        noise = torch.full(p_size, noise_level)
+        p_size = F0.size()[2:]
+        noise = torch.stack([torch.full(p_size, noi) for noi in noise_level]).unsqueeze(1)
         F0 = torch.cat((noise, F0), dim=1)
         features = self.main_layers(F0)
         residual = self.residual(features)

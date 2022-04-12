@@ -3,8 +3,9 @@ import os
 from PIL import Image, ImageChops
 import torch as th
 from torch.utils.data import DataLoader, Dataset
-from mosaic import bayer
-import cv2 as cv
+from torchvision import transforms
+from .mosaic import *
+
 
 class DemosaicDataset(Dataset):
     def __init__(self, root_dir):
@@ -15,14 +16,17 @@ class DemosaicDataset(Dataset):
         sample_name = self.path[index]
         sample_url = os.path.join(self.root_dir, sample_name)
         sample = Image.open(sample_url)
-        sample = sample.resize((int(sample.width*0.5, sample.height*0.5)), Image.BICUBIC)
+        sample = sample.resize((int(sample.width*0.5), int(sample.height*0.5)), Image.BICUBIC)
         sample = self.augment(sample)
-        sample = th.tensor(sample)
+        sample = th.from_numpy(np.transpose(sample, (2, 0, 1)).copy()).float()
         m_sample = bayer(sample)
+        # toPIL = transforms.ToPILImage()
+        # img = toPIL(sample)
+        # img.show()
         sigma = np.random.uniform(0, 20)
         transform = AddGaussianNoise(0, sigma**2)
-        m_sample = transform(m_sample)
-        return {"sigma", sigma, "M", m_sample, "I", sample}
+        m_sample = transform(m_sample).float()
+        return {"sigma": sigma, "M": m_sample, "I": sample}
 
     def __len__(self):
         return len(self.path)
@@ -57,5 +61,5 @@ class AddGaussianNoise(object):
         else:
             low_clip = 0
         out = np.clip(out, low_clip, 1.0)
-        out = np.uint8(out*255)
-        return th.tensor(out)
+        out = out*255
+        return out

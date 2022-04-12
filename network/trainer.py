@@ -1,6 +1,4 @@
-import torch as th
-from .jdd import BayerJDDNetwork
-from metrics import *
+from .metrics import *
 
 
 class Demosaicnet:
@@ -12,18 +10,20 @@ class Demosaicnet:
         self.device = "cpu"
         if cuda:
             self.device = "cuda"
-        self.model.to(self.device)
+        # self.model.to(self.device)
         self.opt = th.optim.Adam(self.model.parameters(), lr=lr)
         self.loss = th.nn.MSELoss()
         self.psnr = PSNR()
 
     def forward(self, inputs):
-        inputs = inputs.to(self.device)
-        outputs = self.model(inputs)
+        sigma = inputs["sigma"]
+        img = inputs["M"]
+        # img = img.to(self.device)
+        outputs = self.model(img, sigma)
         return outputs
 
     def backward(self, outputs, targets):
-        targets = targets.to(self.device)
+        # targets = targets.to(self.device)
         loss = self.loss(outputs, targets)
         self.opt.zero_grad()
         loss.backward()
