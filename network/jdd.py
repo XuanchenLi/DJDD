@@ -3,6 +3,7 @@ import torch.nn as nn
 import collections
 import numpy as np
 
+
 class BayerJDDNetwork(nn.Module):
     def __init__(self, width=64, depth=16, pre_trained=False, padding=True):
         super(BayerJDDNetwork, self).__init__()
@@ -12,6 +13,7 @@ class BayerJDDNetwork(nn.Module):
 
         # 下采样
         self.down_sample = nn.Conv2d(3, 4, (2, 2), stride=(2, 2))
+        self.down_sample.bias.data.zero_()
         # D-1次卷积
         self.layers = collections.OrderedDict()
         if padding:
@@ -25,19 +27,40 @@ class BayerJDDNetwork(nn.Module):
                 in_size = 5
             self.layers["Conv_{}".format(i + 1)] = \
                 nn.Conv2d(in_size, out_size, kernel_size=(3, 3), padding=padding)
+            torch.nn.init.kaiming_uniform_(
+                self.layers["Conv_{}".format(i + 1)].weight,
+                a=0, mode='fan_in', nonlinearity='leaky_relu'
+            )
+            nn.init.constant_(self.layers["Conv_{}".format(i + 1)].bias, 0)
             self.layers["ReLU_{}".format(i + 1)] = nn.ReLU(inplace=True)
 
         self.main_layers = nn.Sequential(self.layers)
         # residual层
         self.residual = nn.Conv2d(width, 12, (1, 1))
+        nn.init.constant_(self.residual.bias, 0)
+        torch.nn.init.kaiming_uniform_(
+            self.residual.weight,
+            a=0, mode='fan_in', nonlinearity='leaky_relu'
+        )
         # 上采样
         self.up_sample = nn.ConvTranspose2d(12, 3, (2, 2), stride=(2, 2), groups=3)
-
+        nn.init.constant_(self.up_sample.bias, 0)
+        torch.nn.init.kaiming_uniform_(
+            self.up_sample.weight,
+            a=0, mode='fan_in', nonlinearity='leaky_relu'
+        )
         self.final_process = nn.Sequential(
             nn.Conv2d(6, width, (3, 3), padding=padding),
             nn.ReLU(inplace=True),
             nn.Conv2d(width, 3, (1, 1))
         )
+        for i in range(len(self.final_process)):
+            if i % 2 == 0:
+                nn.init.constant_(self.final_process[i].bias, 0)
+                torch.nn.init.kaiming_uniform_(
+                    self.final_process[i].weight,
+                    a=0, mode='fan_in', nonlinearity='leaky_relu'
+                )
 
     def forward(self, inputs, noise_level):
         F0 = self.down_sample(inputs)
@@ -50,6 +73,8 @@ class BayerJDDNetwork(nn.Module):
         FD1 = torch.cat((inputs, FD1), dim=1)
         outputs = self.final_process(FD1)
         return outputs
+
+
 
 
 

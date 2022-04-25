@@ -26,6 +26,7 @@ class DemosaicDataset(Dataset):
         sigma = np.random.uniform(0, 20)
         transform = AddGaussianNoise(0, sigma**2)
         m_sample = transform(m_sample).float()
+
         return {"sigma": sigma, "M": m_sample, "I": sample}
 
     def __len__(self):
@@ -42,7 +43,7 @@ class DemosaicDataset(Dataset):
             img = ImageChops.offset(img, -1, 0)
         elif num == 3:
             img = ImageChops.offset(img, 0, 1)
-        elif num ==4:
+        elif num == 4:
             img = ImageChops.offset(img, 0, -1)
         return img
 
@@ -63,3 +64,4 @@ class AddGaussianNoise(object):
         out = np.clip(out, low_clip, 1.0)
         out = out*255
         return out
+

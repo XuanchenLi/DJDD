@@ -6,27 +6,24 @@ from network.data import DemosaicDataset
 from network.jdd import BayerJDDNetwork
 from network.trainer import Demosaicnet
 from PIL import Image
+from PIL import ImageFile
 
 
-BATCH_SIZE = 4
-EPOCHS = 4
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+BATCH_SIZE = 64
+EPOCHS = 32
 if __name__ == '__main__':
     dataset = DemosaicDataset("dataset/train/moire/000")
     model = BayerJDDNetwork()
+    # t_num = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    # print(t_num)
     trainer = Demosaicnet(model)
-    toPIL = transforms.ToPILImage()
+    # toPIL = transforms.ToPILImage()
     loader = Data.DataLoader(dataset=dataset, batch_size=BATCH_SIZE, shuffle=True)
-    for epoch in range(EPOCHS):
-        for idx, batch in enumerate(loader):
-            gt = batch["I"]
-            subkey = ['sigma', 'M']
-            data = dict([(key, batch[key]) for key in subkey])
-            out = trainer.forward(data)
-            res = trainer.backward(out, gt)
-            # img1 = toPIL(out[0])
-            # img1.show()
-            print("loss:{} psnr:{}".format(res["loss"], res["psnr"]))
-            # os.system("pause")
+    trainer.train(loader, EPOCHS)
+    testdata = DemosaicDataset("dataset/test/moire/000")
+    testloader = Data.DataLoader(dataset=testdata, batch_size=BATCH_SIZE, shuffle=False)
+    trainer.test(testloader)
 
 
 
