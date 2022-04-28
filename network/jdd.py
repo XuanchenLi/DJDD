@@ -68,9 +68,10 @@ class BayerJDDNetwork(nn.Module):
 
     def forward(self, inputs, noise_level):
         F0 = self.down_sample(inputs)
+        # F0 = inputs
         p_size = F0.size()[2:]
-        # noise = torch.stack([torch.full(p_size, noi) for noi in noise_level]).unsqueeze(1)
-        noise = torch.stack([torch.full(p_size, noi) for noi in noise_level]).unsqueeze(1).cuda()
+        noise = torch.stack([torch.full(p_size, noi) for noi in noise_level]).unsqueeze(1)
+        # noise = torch.stack([torch.full(p_size, noi) for noi in noise_level]).unsqueeze(1).cuda()
         F0 = torch.cat((noise, F0), dim=1)
         features = self.main_layers(F0)
         residual = self.residual(features)

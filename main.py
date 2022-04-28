@@ -10,32 +10,31 @@ from PIL import Image
 from PIL import ImageFile
 
 
-BATCH_SIZE = 64
-EPOCHS = 20
+BATCH_SIZE = 1
+EPOCHS = 10
 
 if __name__ == '__main__':
-    dir = "dataset/train/moire/000"
-    pt = os.listdir(dir)
-    dd = []
-    dd.append(dir)
+    th.backends.cudnn.enabled = False
+    th.cuda.empty_cache()
     """
-    for f in pt:
-      dd.append(os.path.join(dir, f, 'images'))
-    """
+    dd = ['dataset/train/moire/000', 'dataset/val/moire/000', 'dataset/val/hdrvdp/000']
     model = BayerJDDNetwork()
     model.cuda()
     # t_num = sum(p.numel() for p in model.parameters() if p.requires_grad)
     # print(t_num)
     trainer = Demosaicnet(model)
-    """
-    for s in dd:
-      dataset = DemosaicDataset(s)
-      loader = Data.DataLoader(dataset=dataset, batch_size=BATCH_SIZE, shuffle=True)
-    """
     trainer.train(dd, BATCH_SIZE, EPOCHS)
     trainer.save_model()
+    """
+    dd = ['dataset/train/moire/000', 'dataset/val/moire/000', 'dataset/val/hdrvdp/000']
+    # model = BayerJDDNetwork().cuda()
+    model = th.load('net4.pth').cpu()
+    trainer = Demosaicnet(model)
+    # sigma = np.random.uniform(0, 20) / 255
+    # trainer.train(dd, BATCH_SIZE, EPOCHS)
+    # trainer.save_model(5)
     testdata = DemosaicDataset("dataset/test/moire/000")
-    testloader = Data.DataLoader(dataset=testdata, batch_size=BATCH_SIZE, shuffle=False)
+    testloader = Data.DataLoader(dataset=testdata, batch_size=BATCH_SIZE, shuffle=True)
     trainer.test(testloader)
 
 

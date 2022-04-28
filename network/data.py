@@ -1,11 +1,14 @@
 import numpy as np
 import os
-from PIL import Image, ImageChops
+from PIL import Image, ImageChops, ImageFile
 import torch as th
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 import skimage
 from .mosaic import *
+
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 class DemosaicDataset(Dataset):
@@ -20,6 +23,7 @@ class DemosaicDataset(Dataset):
         """
         self.root_dir = root_dir
         self.path = os.listdir(root_dir)
+        # self.sigma = sigma
 
     def __getitem__(self, index):
         sample_name = self.path[index]
@@ -30,16 +34,16 @@ class DemosaicDataset(Dataset):
         # sample = sample.resize((int(sample.width*0.5), int(sample.height*0.5)), Image.BICUBIC)
         sample = self.augment(sample)
         sample = th.from_numpy(np.transpose(sample, (2, 0, 1)).copy()).float() / (2**8-1)
-        m_sample = bayer(sample)
         # img = toPIL(m_sample)
-        sigma = np.random.uniform(0, 20) / 255
+        sigma = np.random.rand() * 20 / 255
         transform = AddGaussianNoise(0, sigma)
         m_sample = transform(sample).float()
+        m_sample = bayer(m_sample)
         # img = toPIL(m_sample)
         # img.show()
         # print(m_sample - sample)
-        return {"sigma": sigma, "M": m_sample.cuda(), "I": sample.cuda()}
-        # return {"sigma": sigma, "M": m_sample, "I": sample}
+        # return {"sigma": sigma, "M": m_sample.cuda(), "I": sample.cuda()}
+        return {"sigma": sigma, "M": m_sample, "I": sample}
 
     def __len__(self):
         return len(self.path)
@@ -61,7 +65,7 @@ class DemosaicDataset(Dataset):
 
 
 class AddGaussianNoise(object):
-    def __init__(self, mean=0.0, sigma=1.0):
+    def __init__(self, mean, sigma):
         self.mean = mean
         self.sigma = sigma
 

@@ -17,7 +17,8 @@ class Demosaicnet:
         if cuda:
             self.device = "cuda"
         # self.model.to(self.device)
-        self.opt = th.optim.Adam(self.model.parameters(), lr=lr, weight_decay=1e-8)
+        if model is not None:
+            self.opt = th.optim.Adam(self.model.parameters(), lr=lr, weight_decay=1e-8)
         self.loss = th.nn.MSELoss()
         self.psnr = PSNR()
         self.testloader = None
@@ -43,6 +44,7 @@ class Demosaicnet:
 
     def train(self, dirs, bs, epochs):
         self.dirs = dirs
+        # self.sigma = sigma
         # self.trainloader = dataloader
         self.epochs = epochs
         self.model.train()
@@ -77,15 +79,15 @@ class Demosaicnet:
                 out = self.forward(data)
                 loss = self.loss(out, gt)
                 psnr = self.psnr(th.clamp(out, 0, 1), gt)
-                img1 = toPIL(out[0])
+                img1 = toPIL(out[0].cpu())
                 img1.show()
-                img2 = toPIL(gt[0])
+                img2 = toPIL(gt[0].cpu())
                 img2.show()
                 print("test loss:{} psnr:{}".format(loss.item() / out.shape[0], psnr))
                 os.system("pause")
 
-    def save_model(self):
-        th.save(self.model, 'net.pth')
+    def save_model(self, id):
+        th.save(self.model, 'net{}.pth'.format(id))
 
     def load_model(self, path):
         self.model = th.load(path)
