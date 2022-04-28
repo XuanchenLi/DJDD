@@ -37,7 +37,10 @@ class DemosaicDataset(Dataset):
         # img = toPIL(m_sample)
         sigma = np.random.rand() * 20 / 255
         transform = AddGaussianNoise(0, sigma)
+        # print(sample)
         m_sample = transform(sample).float()
+        # print(sample)
+        # print(m_sample)
         m_sample = bayer(m_sample)
         # img = toPIL(m_sample)
         # img.show()

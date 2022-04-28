@@ -40,7 +40,7 @@ class Demosaicnet:
         self.opt.step()
         with th.no_grad():
             psnr = self.psnr(th.clamp(outputs, 0, 1), targets)
-        return {"loss": loss.item() / outputs.shape[0] , "psnr": psnr.item()}
+        return {"loss": loss.item() / outputs.shape[0], "psnr": psnr.item()}
 
     def train(self, dirs, bs, epochs):
         self.dirs = dirs
@@ -62,9 +62,9 @@ class Demosaicnet:
                     out = self.forward(data)
                     res = self.backward(out, gt)
                     # img1 = toPIL(out[0])
-                     # img1.show()
+                    # img1.show()
                     print("train#{}# loss:{} psnr:{}".format(epoch, res["loss"], res["psnr"]))
-                     # os.system("pause")
+                    # os.system("pause")
 
     def test(self, dataloader):
         self.testloader = dataloader
@@ -78,8 +78,8 @@ class Demosaicnet:
                 self.opt.zero_grad()
                 out = self.forward(data)
                 loss = self.loss(out, gt)
-                psnr = self.psnr(th.clamp(out, 0, 1), gt)
-                img1 = toPIL(out[0].cpu())
+                psnr = self.psnr(out, gt)
+                img1 = toPIL(th.clamp(out, 0, 1)[0].cpu())
                 img1.show()
                 img2 = toPIL(gt[0].cpu())
                 img2.show()

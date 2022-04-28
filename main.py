@@ -34,7 +34,7 @@ if __name__ == '__main__':
     # trainer.train(dd, BATCH_SIZE, EPOCHS)
     # trainer.save_model(5)
     testdata = DemosaicDataset("dataset/test/moire/000")
-    testloader = Data.DataLoader(dataset=testdata, batch_size=BATCH_SIZE, shuffle=True)
+    testloader = Data.DataLoader(dataset=testdata, batch_size=BATCH_SIZE, shuffle=False)
     trainer.test(testloader)
 
 
