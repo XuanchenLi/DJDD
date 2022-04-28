@@ -4,30 +4,42 @@ from PIL import Image, ImageChops
 import torch as th
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
+import skimage
 from .mosaic import *
 
 
 class DemosaicDataset(Dataset):
     def __init__(self, root_dir):
+        """
+        self.path = []
         self.root_dir = root_dir
-        self.path = os.listdir(self.root_dir)
+        for f in self.root_dir:
+          p = os.listdir(f)
+          for pp in p:
+            self.path.append(os.path.join(f,pp))
+        """
+        self.root_dir = root_dir
+        self.path = os.listdir(root_dir)
 
     def __getitem__(self, index):
         sample_name = self.path[index]
         sample_url = os.path.join(self.root_dir, sample_name)
-        sample = Image.open(sample_url)
-        sample = sample.resize((int(sample.width*0.5), int(sample.height*0.5)), Image.BICUBIC)
-        sample = self.augment(sample)
-        sample = th.from_numpy(np.transpose(sample, (2, 0, 1)).copy()).float()
-        m_sample = bayer(sample)
+        # sample_url = self.path[index]
+        sample = Image.open(sample_url).convert("RGB")
         # toPIL = transforms.ToPILImage()
-        # img = toPIL(sample)
+        # sample = sample.resize((int(sample.width*0.5), int(sample.height*0.5)), Image.BICUBIC)
+        sample = self.augment(sample)
+        sample = th.from_numpy(np.transpose(sample, (2, 0, 1)).copy()).float() / (2**8-1)
+        m_sample = bayer(sample)
+        # img = toPIL(m_sample)
+        sigma = np.random.uniform(0, 20) / 255
+        transform = AddGaussianNoise(0, sigma)
+        m_sample = transform(sample).float()
+        # img = toPIL(m_sample)
         # img.show()
-        sigma = np.random.uniform(0, 20)
-        transform = AddGaussianNoise(0, sigma**2)
-        m_sample = transform(m_sample).float()
-
-        return {"sigma": sigma, "M": m_sample, "I": sample}
+        # print(m_sample - sample)
+        return {"sigma": sigma, "M": m_sample.cuda(), "I": sample.cuda()}
+        # return {"sigma": sigma, "M": m_sample, "I": sample}
 
     def __len__(self):
         return len(self.path)
@@ -49,19 +61,10 @@ class DemosaicDataset(Dataset):
 
 
 class AddGaussianNoise(object):
-    def __init__(self, mean=0.0, variance=1.0):
+    def __init__(self, mean=0.0, sigma=1.0):
         self.mean = mean
-        self.variance = variance
+        self.sigma = sigma
 
     def __call__(self, img):
-        image = np.array(img/255, dtype=float)
-        noise = np.random.normal(self.mean, self.variance ** 0.5, image.shape)
-        out = img + noise
-        if out.min() < 0:
-            low_clip = -1
-        else:
-            low_clip = 0
-        out = np.clip(out, low_clip, 1.0)
-        out = out*255
-        return out
+        return th.from_numpy(skimage.util.random_noise(img, mode='gaussian', var=self.sigma ** 2))
 

@@ -13,6 +13,10 @@ class BayerJDDNetwork(nn.Module):
 
         # 下采样
         self.down_sample = nn.Conv2d(3, 4, (2, 2), stride=(2, 2))
+        torch.nn.init.kaiming_uniform_(
+            self.down_sample.weight,
+            a=0, mode='fan_in', nonlinearity='leaky_relu'
+        )
         self.down_sample.bias.data.zero_()
         # D-1次卷积
         self.layers = collections.OrderedDict()
@@ -65,7 +69,8 @@ class BayerJDDNetwork(nn.Module):
     def forward(self, inputs, noise_level):
         F0 = self.down_sample(inputs)
         p_size = F0.size()[2:]
-        noise = torch.stack([torch.full(p_size, noi) for noi in noise_level]).unsqueeze(1)
+        # noise = torch.stack([torch.full(p_size, noi) for noi in noise_level]).unsqueeze(1)
+        noise = torch.stack([torch.full(p_size, noi) for noi in noise_level]).unsqueeze(1).cuda()
         F0 = torch.cat((noise, F0), dim=1)
         features = self.main_layers(F0)
         residual = self.residual(features)

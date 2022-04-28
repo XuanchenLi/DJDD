@@ -9,6 +9,6 @@ class PSNR(th.nn.Module):
 
     def forward(self, out, ref):
         mse = self.mse(out, ref)
-        return 10 * th.log10(mse + 1e-12)
+        return -10 * th.log10(mse + 1e-12)
 
 
