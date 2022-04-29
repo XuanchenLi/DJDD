@@ -35,7 +35,10 @@ class DemosaicDataset(Dataset):
         sample = self.augment(sample)
         sample = th.from_numpy(np.transpose(sample, (2, 0, 1)).copy()).float() / (2**8-1)
         # img = toPIL(m_sample)
-        sigma = np.random.rand() * 20 / 255
+        # sigma = np.random.rand() * 20 / 255
+        sigma = 0
+        # print("sigma:{}".format(sigma*255))
+        # sigma = 0
         transform = AddGaussianNoise(0, sigma)
         # print(sample)
         m_sample = transform(sample).float()
@@ -45,8 +48,8 @@ class DemosaicDataset(Dataset):
         # img = toPIL(m_sample)
         # img.show()
         # print(m_sample - sample)
-        # return {"sigma": sigma, "M": m_sample.cuda(), "I": sample.cuda()}
-        return {"sigma": sigma, "M": m_sample, "I": sample}
+        return {"sigma": sigma, "M": m_sample.cuda(), "I": sample.cuda()}
+        # return {"sigma": sigma, "M": m_sample, "I": sample}
 
     def __len__(self):
         return len(self.path)

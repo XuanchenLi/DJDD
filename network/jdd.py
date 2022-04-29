@@ -3,7 +3,7 @@ import torch.nn as nn
 import collections
 from torchvision import transforms
 import numpy as np
-
+from .mosaic import *
 
 class BayerJDDNetwork(nn.Module):
     def __init__(self, width=64, depth=16, pre_trained=False, padding=True):
@@ -11,7 +11,7 @@ class BayerJDDNetwork(nn.Module):
 
         self.width = width
         self.depth = depth
-
+        """
         # 下采样
         self.down_sample = nn.Conv2d(3, 4, (2, 2), stride=(2, 2))
         torch.nn.init.kaiming_uniform_(
@@ -19,6 +19,7 @@ class BayerJDDNetwork(nn.Module):
             a=0, mode='fan_in', nonlinearity='relu'
         )
         self.down_sample.bias.data.zero_()
+        """
         # D-1次卷积
         self.layers = collections.OrderedDict()
         if padding:
@@ -51,6 +52,8 @@ class BayerJDDNetwork(nn.Module):
             self.residual.weight,
             a=0, mode='fan_in', nonlinearity='relu'
         )
+        self.relu = nn.ReLU(inplace=True)
+        """"
         # 上采样
         self.up_sample = nn.ConvTranspose2d(12, 3, (2, 2), stride=(2, 2), groups=3)
         nn.init.constant_(self.up_sample.bias, 0)
@@ -58,6 +61,7 @@ class BayerJDDNetwork(nn.Module):
             self.up_sample.weight,
             a=0, mode='fan_in', nonlinearity='relu'
         )
+        """
         self.final_process = nn.Sequential(
             nn.Conv2d(6, width, (3, 3), padding=padding),
             nn.ReLU(inplace=True),
@@ -72,19 +76,21 @@ class BayerJDDNetwork(nn.Module):
                 )
 
     def forward(self, inputs, noise_level):
-        F0 = self.down_sample(inputs)
+        F0 = bayer_down_sample(inputs).cuda()
         # F0 = inputs
         p_size = F0.size()[2:]
-        noise = torch.stack([torch.full(p_size, noi) for noi in noise_level]).unsqueeze(1)
-        # noise = torch.stack([torch.full(p_size, noi) for noi in noise_level]).unsqueeze(1).cuda()
+        # noise = torch.stack([torch.full(p_size, noi) for noi in noise_level]).unsqueeze(1)
+        noise = torch.stack([torch.full(p_size, noi) for noi in noise_level]).unsqueeze(1).cuda()
         F0 = torch.cat((noise, F0), dim=1)
         # print(noise[0], F0[0][0])
         features = self.main_layers(F0)
         # filters, masks = features[:, 0:self.width], features[:, self.width:2 * self.width]
         # filtered = filters * masks
         residual = self.residual(features)
+        residual = self.relu(residual)
         # residual = self.residual(filtered)
-        FD1 = self.up_sample(residual)
+        # FD1 = self.up_sample(residual)
+        FD1 = bayer_up_sample(residual).cuda()
         """
         toPIL = transforms.ToPILImage()
         img = toPIL(FD1[0])
@@ -93,6 +99,9 @@ class BayerJDDNetwork(nn.Module):
         FD1 = torch.cat((inputs, FD1), dim=1)
         outputs = self.final_process(FD1)
         return torch.clamp(outputs, 0, 1)
+
+
+
 
 
 

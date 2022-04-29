@@ -1,4 +1,5 @@
 from PIL import Image
+import matplotlib.pyplot as plt
 from torchvision.transforms import ToTensor,ToPILImage
 import os
 from network.data import DemosaicDataset
@@ -79,10 +80,15 @@ class Demosaicnet:
                 out = self.forward(data)
                 loss = self.loss(out, gt)
                 psnr = self.psnr(out, gt)
-                img1 = toPIL(th.clamp(out, 0, 1)[0].cpu())
-                img1.show()
-                img2 = toPIL(gt[0].cpu())
-                img2.show()
+                plt.figure()
+                plt.subplot(1, 2, 1)
+                plt.imshow(toPIL(out[0].cpu()))
+                plt.xlabel("ours")
+                plt.title("noise_level:{}".format(batch['sigma'][0] * 255))
+                plt.subplot(1, 2, 2)
+                plt.imshow(toPIL(gt[0].cpu()))
+                plt.xlabel("ground-truth")
+                plt.show()
                 print("test loss:{} psnr:{}".format(loss.item() / out.shape[0], psnr))
                 os.system("pause")
 

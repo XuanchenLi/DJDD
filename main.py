@@ -10,8 +10,8 @@ from PIL import Image
 from PIL import ImageFile
 
 
-BATCH_SIZE = 1
-EPOCHS = 10
+BATCH_SIZE = 8
+EPOCHS = 3
 
 if __name__ == '__main__':
     th.backends.cudnn.enabled = False
@@ -27,15 +27,15 @@ if __name__ == '__main__':
     trainer.save_model()
     """
     dd = ['dataset/train/moire/000', 'dataset/val/moire/000', 'dataset/val/hdrvdp/000']
-    # model = BayerJDDNetwork().cuda()
-    model = th.load('net4.pth').cpu()
+    model = BayerJDDNetwork().cuda()
+    # model = th.load('net7.pth').cpu()
     trainer = Demosaicnet(model)
     # sigma = np.random.uniform(0, 20) / 255
-    # trainer.train(dd, BATCH_SIZE, EPOCHS)
-    # trainer.save_model(5)
-    testdata = DemosaicDataset("dataset/test/moire/000")
-    testloader = Data.DataLoader(dataset=testdata, batch_size=BATCH_SIZE, shuffle=False)
-    trainer.test(testloader)
+    trainer.train(dd, BATCH_SIZE, EPOCHS)
+    trainer.save_model(8)
+    # testdata = DemosaicDataset("dataset/test/moire/000")
+    # testloader = Data.DataLoader(dataset=testdata, batch_size=BATCH_SIZE, shuffle=True)
+    # trainer.test(testloader)
 
 
 
