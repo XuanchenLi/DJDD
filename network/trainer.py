@@ -30,7 +30,8 @@ class Demosaicnet:
         sigma = inputs["sigma"]
         img = inputs["M"]
         # img = img.to(self.device)
-        outputs = self.model(img, sigma)
+        # outputs = self.model(img, sigma)
+        outputs = self.model(img)
         return outputs
 
     def backward(self, outputs, targets):
@@ -69,7 +70,7 @@ class Demosaicnet:
 
     def test(self, dataloader):
         self.testloader = dataloader
-        self.model.eval()
+        # self.model.eval()
         toPIL = ToPILImage()
         with th.no_grad():
             for idx, batch in enumerate(self.testloader):
@@ -78,6 +79,7 @@ class Demosaicnet:
                 data = dict([(key, batch[key]) for key in subkey])
                 self.opt.zero_grad()
                 out = self.forward(data)
+                print(out.shape)
                 loss = self.loss(out, gt)
                 psnr = self.psnr(out, gt)
                 plt.figure()

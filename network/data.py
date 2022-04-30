@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 import skimage
 from .mosaic import *
+import matplotlib.pyplot as plt
 
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -42,9 +43,10 @@ class DemosaicDataset(Dataset):
         transform = AddGaussianNoise(0, sigma)
         # print(sample)
         m_sample = transform(sample).float()
+        # plt.imshow(toPIL(m_sample.cpu()))
         # print(sample)
         # print(m_sample)
-        m_sample = bayer(m_sample)
+        m_sample = bayer2(m_sample)
         # img = toPIL(m_sample)
         # img.show()
         # print(m_sample - sample)

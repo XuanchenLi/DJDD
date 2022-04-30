@@ -5,6 +5,7 @@ from torchvision import transforms
 import numpy as np
 from .mosaic import *
 
+
 class BayerJDDNetwork(nn.Module):
     def __init__(self, width=64, depth=16, pre_trained=False, padding=True):
         super(BayerJDDNetwork, self).__init__()
@@ -36,7 +37,7 @@ class BayerJDDNetwork(nn.Module):
                 out_size = self.width * 2
             """
             self.layers["Conv_{}".format(i + 1)] = \
-                nn.Conv2d(in_size, out_size, kernel_size=(3, 3), padding=padding)
+                nn.Conv2d(in_size, out_size, kernel_size=3, padding=padding)
             torch.nn.init.kaiming_uniform_(
                 self.layers["Conv_{}".format(i + 1)].weight,
                 a=0, mode='fan_in', nonlinearity='relu'
@@ -46,7 +47,8 @@ class BayerJDDNetwork(nn.Module):
 
         self.main_layers = nn.Sequential(self.layers)
         # residual层
-        self.residual = nn.Conv2d(width, 12, (1, 1))
+        # self.residual = nn.Conv2d(width, 12, 1)
+        self.residual = nn.Conv2d(width, 12, 1)
         nn.init.constant_(self.residual.bias, 0)
         torch.nn.init.kaiming_uniform_(
             self.residual.weight,
@@ -63,9 +65,9 @@ class BayerJDDNetwork(nn.Module):
         )
         """
         self.final_process = nn.Sequential(
-            nn.Conv2d(6, width, (3, 3), padding=padding),
+            nn.Conv2d(6, width, 3, padding=padding),
             nn.ReLU(inplace=True),
-            nn.Conv2d(width, 3, (1, 1))
+            nn.Conv2d(width, 3, 1)
         )
         for i in range(len(self.final_process)):
             if i % 2 == 0:
@@ -76,26 +78,28 @@ class BayerJDDNetwork(nn.Module):
                 )
 
     def forward(self, inputs, noise_level):
-        F0 = bayer_down_sample(inputs).cuda()
-        # F0 = inputs
+        # print(inputs)
+        F0 = bayer_down_sample2(inputs).cuda()
+        # F0 = bayer_down_sample(inputs)
         p_size = F0.size()[2:]
         # noise = torch.stack([torch.full(p_size, noi) for noi in noise_level]).unsqueeze(1)
         noise = torch.stack([torch.full(p_size, noi) for noi in noise_level]).unsqueeze(1).cuda()
         F0 = torch.cat((noise, F0), dim=1)
-        # print(noise[0], F0[0][0])
         features = self.main_layers(F0)
         # filters, masks = features[:, 0:self.width], features[:, self.width:2 * self.width]
         # filtered = filters * masks
         residual = self.residual(features)
-        residual = self.relu(residual)
+        residual = self.relu(residual).cpu()
         # residual = self.residual(filtered)
-        # FD1 = self.up_sample(residual)
-        FD1 = bayer_up_sample(residual).cuda()
+        # FD1 = bayer_up_sample(residual)
+        FD1 = bayer_up_sample2(residual).cuda()
+        # print(FD1.shape)
         """
         toPIL = transforms.ToPILImage()
-        img = toPIL(FD1[0])
+        img = toPIL(FD1[0].cpu())
         img.show()
         """
+        # print(inputs)
         FD1 = torch.cat((inputs, FD1), dim=1)
         outputs = self.final_process(FD1)
         return torch.clamp(outputs, 0, 1)

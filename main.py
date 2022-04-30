@@ -8,10 +8,12 @@ from network.jdd import BayerJDDNetwork
 from network.trainer import Demosaicnet
 from PIL import Image
 from PIL import ImageFile
+from network.author import *
+from network.author import *
 
 
 BATCH_SIZE = 8
-EPOCHS = 3
+EPOCHS = 10
 
 if __name__ == '__main__':
     th.backends.cudnn.enabled = False
@@ -27,13 +29,15 @@ if __name__ == '__main__':
     trainer.save_model()
     """
     dd = ['dataset/train/moire/000', 'dataset/val/moire/000', 'dataset/val/hdrvdp/000']
-    model = BayerJDDNetwork().cuda()
-    # model = th.load('net7.pth').cpu()
+    # dd = ['dataset/val/small']
+    # model = BayerJDDNetwork().cuda()
+    # model = th.load("")
+    model = BayerDemosaick(pretrained=False, pad=True).cuda()
     trainer = Demosaicnet(model)
     # sigma = np.random.uniform(0, 20) / 255
     trainer.train(dd, BATCH_SIZE, EPOCHS)
-    trainer.save_model(8)
-    # testdata = DemosaicDataset("dataset/test/moire/000")
+    trainer.save_model(12)
+    # testdata = DemosaicDataset('dataset/val/small')
     # testloader = Data.DataLoader(dataset=testdata, batch_size=BATCH_SIZE, shuffle=True)
     # trainer.test(testloader)
 
