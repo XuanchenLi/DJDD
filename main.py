@@ -12,8 +12,8 @@ from network.author import *
 from network.author import *
 
 
-BATCH_SIZE = 8
-EPOCHS = 10
+BATCH_SIZE = 4
+EPOCHS = 7
 
 if __name__ == '__main__':
     th.backends.cudnn.enabled = False
@@ -28,16 +28,16 @@ if __name__ == '__main__':
     trainer.train(dd, BATCH_SIZE, EPOCHS)
     trainer.save_model()
     """
-    dd = ['dataset/train/moire/000', 'dataset/val/moire/000', 'dataset/val/hdrvdp/000']
+    dd = ['dataset/train/moire/000']
     # dd = ['dataset/val/small']
     # model = BayerJDDNetwork().cuda()
-    # model = th.load("")
-    model = BayerDemosaick(pretrained=False, pad=True).cuda()
+    model = th.load("net14.pth").cuda()
+    # model = BayerDemosaick(pretrained=False, pad=True).cuda()
     trainer = Demosaicnet(model)
     # sigma = np.random.uniform(0, 20) / 255
     trainer.train(dd, BATCH_SIZE, EPOCHS)
-    trainer.save_model(12)
-    # testdata = DemosaicDataset('dataset/val/small')
+    trainer.save_model(15)
+    # testdata = DemosaicDataset('dataset/val/moire/000')
     # testloader = Data.DataLoader(dataset=testdata, batch_size=BATCH_SIZE, shuffle=True)
     # trainer.test(testloader)
 

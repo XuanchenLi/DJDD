@@ -44,6 +44,7 @@ class BayerJDDNetwork(nn.Module):
             )
             nn.init.constant_(self.layers["Conv_{}".format(i + 1)].bias, 0)
             self.layers["ReLU_{}".format(i + 1)] = nn.ReLU(inplace=True)
+            # self.layers["BN_{}".format(i+1)] = nn.BatchNorm2d(out_size)
 
         self.main_layers = nn.Sequential(self.layers)
         # residual层
@@ -102,7 +103,7 @@ class BayerJDDNetwork(nn.Module):
         # print(inputs)
         FD1 = torch.cat((inputs, FD1), dim=1)
         outputs = self.final_process(FD1)
-        return torch.clamp(outputs, 0, 1)
+        return outputs
 
 
 

@@ -12,7 +12,7 @@ class Demosaicnet:
     """
     trainer
     """
-    def __init__(self, model=None, lr=1e-4, cuda=th.cuda.is_available(), pretrained=False):
+    def __init__(self, model=None, lr=1e-6, cuda=th.cuda.is_available(), pretrained=False):
         self.model = model
         self.device = "cpu"
         if cuda:
@@ -30,8 +30,8 @@ class Demosaicnet:
         sigma = inputs["sigma"]
         img = inputs["M"]
         # img = img.to(self.device)
-        # outputs = self.model(img, sigma)
-        outputs = self.model(img)
+        outputs = self.model(img, sigma)
+        # outputs = self.model(img)
         return outputs
 
     def backward(self, outputs, targets):
@@ -40,9 +40,12 @@ class Demosaicnet:
         self.opt.zero_grad()
         loss.backward()
         self.opt.step()
+        psnr_ave = 0
         with th.no_grad():
-            psnr = self.psnr(th.clamp(outputs, 0, 1), targets)
-        return {"loss": loss.item() / outputs.shape[0], "psnr": psnr.item()}
+            for i in range(outputs.shape[0]):
+                psnr_ave += self.psnr(th.clamp(outputs[i], 0, 1), targets[i])
+        psnr_ave /= outputs.shape[0]
+        return {"loss": loss.item() / outputs.shape[0], "psnr": psnr_ave}
 
     def train(self, dirs, bs, epochs):
         self.dirs = dirs
@@ -51,13 +54,17 @@ class Demosaicnet:
         self.epochs = epochs
         self.model.train()
         for epoch in range(self.epochs):
-            if epoch != 0 and epoch % 10 == 0:
+            if epoch != 0:
+                pass
+                # self.save_model(13 + epoch * 0.1)
+            if epoch != 0 and epoch % 5 == 0:
                 for params in self.opt.param_groups:
                     params['lr'] *= 0.1
             for s in self.dirs:
                 dataset = DemosaicDataset(s)
                 self.trainloader = Data.DataLoader(dataset=dataset, batch_size=bs, shuffle=True)
                 for idx, batch in enumerate(self.trainloader):
+                    th.cuda.empty_cache()
                     gt = batch["I"]
                     subkey = ['sigma', 'M']
                     data = dict([(key, batch[key]) for key in subkey])
@@ -79,19 +86,23 @@ class Demosaicnet:
                 data = dict([(key, batch[key]) for key in subkey])
                 self.opt.zero_grad()
                 out = self.forward(data)
-                print(out.shape)
+                # print(out.shape)
                 loss = self.loss(out, gt)
                 psnr = self.psnr(out, gt)
+                psnr_ave = 0
+                for i in range(out.shape[0]):
+                    psnr_ave += self.psnr(th.clamp(out[i], 0, 1), gt[i])
+                psnr_ave /= out.shape[0]
                 plt.figure()
                 plt.subplot(1, 2, 1)
-                plt.imshow(toPIL(out[0].cpu()))
+                plt.imshow(toPIL(th.clamp(out[0].cpu(), 0, 1)))
                 plt.xlabel("ours")
                 plt.title("noise_level:{}".format(batch['sigma'][0] * 255))
                 plt.subplot(1, 2, 2)
                 plt.imshow(toPIL(gt[0].cpu()))
                 plt.xlabel("ground-truth")
                 plt.show()
-                print("test loss:{} psnr:{}".format(loss.item() / out.shape[0], psnr))
+                print("test loss:{} psnr:{}".format(loss.item() / out.shape[0], psnr_ave))
                 os.system("pause")
 
     def save_model(self, id):

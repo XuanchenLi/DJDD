@@ -36,8 +36,8 @@ class DemosaicDataset(Dataset):
         sample = self.augment(sample)
         sample = th.from_numpy(np.transpose(sample, (2, 0, 1)).copy()).float() / (2**8-1)
         # img = toPIL(m_sample)
-        # sigma = np.random.rand() * 20 / 255
-        sigma = 0
+        sigma = np.random.rand() * 20 / 255
+        # sigma = 0
         # print("sigma:{}".format(sigma*255))
         # sigma = 0
         transform = AddGaussianNoise(0, sigma)
@@ -78,5 +78,7 @@ class AddGaussianNoise(object):
         self.sigma = sigma
 
     def __call__(self, img):
+        if self.sigma == 0:
+            return img
         return th.from_numpy(skimage.util.random_noise(img, mode='gaussian', var=self.sigma ** 2))
 
